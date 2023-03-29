@@ -12,9 +12,16 @@ Enable the newly installed Blender-GPT add-on and enter your OpenAI api key in t
 ## Features
 
 Carry out editor tasks via natural language including somewhat complicated prompts
+
 Whisper integration for accurate ASR allowing one to control Blender by voice with relative ease
 
-Uses new API structure with chat completion endpoint + System Role (we plan to make this editable via an add-on preference)
+Uses new API structure with chat completion endpoint + System Role
+
+Edit system prompt via add-on preference
+
+Clear chat log
+
+Retrieve a previous request and auto-paste into prompt input
 
 # Usage
 
