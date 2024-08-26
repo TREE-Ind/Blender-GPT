@@ -5,16 +5,14 @@ import subprocess
 import pyaudio
 
 import wave
-import openai
-import numpy as np
-
 
 # Add the 'libs' folder to the Python path
 libs_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 if libs_path not in sys.path:
     sys.path.append(libs_path)
 
-
+import openai
+import numpy as np
 
 bl_info = {
     "name": "GPT-4 Blender Assistant",
