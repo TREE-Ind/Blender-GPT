@@ -2,12 +2,7 @@ import sys
 import os
 import bpy
 import subprocess
-import pyaudio
-import json
 
-import wave
-import openai
-import numpy as np
 
 
 # Add the 'libs' folder to the Python path
@@ -15,7 +10,10 @@ libs_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 if libs_path not in sys.path:
     sys.path.append(libs_path)
 
-
+import openai
+import pyaudio
+import numpy as np
+import wave
 
 bl_info = {
     "name": "GPT-4 Blender Assistant",
@@ -61,6 +59,14 @@ class GPT4AddonPreferences(bpy.types.AddonPreferences):
         default="",
     )
 
+    max_tokens: bpy.props.IntProperty(
+        name="Max Tokens",
+        description="Maximum number of tokens for GPT-4 response",
+        default=250,
+        min=1,
+        max=4096,
+    )
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "audio_path")
@@ -68,6 +74,7 @@ class GPT4AddonPreferences(bpy.types.AddonPreferences):
         layout.prop(self, "api_key")
         layout.prop(self, "system_prompt")
         layout.prop(self, "api_base")
+        layout.prop(self, "max_tokens")
 
 # Dependencies
 def install_package(package):
@@ -102,58 +109,24 @@ def get_api_key():
     preferences = bpy.context.preferences.addons[__name__].preferences
     return preferences.api_key
 
-def get_scene_info():
-    scene_info = []
-    for obj in bpy.context.scene.objects:
-        obj_info = {
-            "name": obj.name,
-            "type": obj.type,
-            "location": list(obj.location),
-            "rotation": list(obj.rotation_euler),
-            "scale": list(obj.scale),
-        }
-        if obj.type == 'MESH':
-            obj_info["vertex_count"] = len(obj.data.vertices)
-            obj_info["face_count"] = len(obj.data.polygons)
-        elif obj.type == 'CAMERA':
-            obj_info["lens"] = obj.data.lens
-        elif obj.type == 'LIGHT':
-            obj_info["light_type"] = obj.data.type
-            obj_info["energy"] = obj.data.energy
-        scene_info.append(obj_info)
-    return json.dumps(scene_info, indent=2)
-
-def get_gpt4_response(prompt, max_tokens=1024):
+def get_gpt4_response(prompt):
     preferences = bpy.context.preferences.addons[__name__].preferences
     system_prompt = preferences.system_prompt
     model = preferences.model
     api_base = preferences.api_base
+    max_tokens = preferences.max_tokens  # Get max_tokens from preferences
 
     openai.api_key = get_api_key()
     if api_base:
         openai.api_base = api_base
 
-    # Get scene information
-    scene_info = get_scene_info()
-
-    # Maintain conversation history
-    conversation_history = [
-        {"role": "system", "content": system_prompt},
-        {"role": "system", "content": f"Current scene information:\n{scene_info}"}
-    ]
-    
-    # Add previous user inputs and assistant replies to the conversation history
-    for item in bpy.context.scene.gpt4_chat_log:
-        conversation_history.append({"role": "user", "content": item.user_input})
-        conversation_history.append({"role": "assistant", "content": item.gpt4_response})
-
-    conversation_history.append({"role": "user", "content": prompt})
-
     completion = openai.ChatCompletion.create(
         model=model,
-        messages=conversation_history,
-        max_tokens=max_tokens,
-        temperature=0.7
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=max_tokens  # Use the max_tokens from preferences
     )
     print(completion.choices[0].message.content)
     return completion.choices[0].message.content
@@ -330,4 +303,5 @@ def unregister():
     del bpy.types.Scene.gpt4_chat_log
 
 if __name__ == "__main__":
+    check_and_install_dependencies()
     register()
